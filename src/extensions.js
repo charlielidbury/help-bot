@@ -20,6 +20,12 @@ Object.defineProperty(Discord.Guild.prototype, "extensions", {
 						channel.name === "help" && channel.type === "category"
 				);
 			},
+			get archiveCategory() {
+				return guild.channels.cache.find(
+					(channel) =>
+						channel.name === "help archive" && channel.type === "category"
+				);
+			},
 			get helpRole() {
 				return guild.roles.cache.find((role) => role.name === "helper");
 			},

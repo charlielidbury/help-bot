@@ -1,4 +1,4 @@
-const { user } = require("..");
+const { user, guilds } = require("..");
 
 module.exports = async function (msg) {
 	const { op } = JSON.parse(msg.channel.topic);
@@ -22,5 +22,19 @@ module.exports = async function (msg) {
 	}
 
 	// resolves
-	msg.channel.delete();
+	if (msg.channel.guild.extensions.archiveCategory) {
+		await msg.channel.edit({
+			parentID: msg.channel.guild.extensions.archiveCategory.id,
+		});
+		
+		msg.channel.send(`This channel has been archived, send a message to revive it.`);
+	} else {
+		const warning = await msg.reply(
+			`This channel will be deleted due to this server not having an archive channel, do you wish to continue?`,
+		);
+
+		await warning.extensions.confirmation;
+
+		msg.channel.delete();
+	}
 };
