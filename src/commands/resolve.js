@@ -1,4 +1,9 @@
 const { user, guilds } = require("..");
+const { 
+	waitConfirmation,
+	channelThanks,
+	getArchiveCategory,
+} = require("../utils");
 
 module.exports = async function (msg) {
 	const { op } = JSON.parse(msg.channel.topic);
@@ -11,29 +16,25 @@ module.exports = async function (msg) {
 
 	// check:
 	// ~ has thanked someone
-	if (msg.channel.extensions.thanks.size === 0) {
-		const reply = await msg.reply(
+	if (channelThanks[msg.channel.id].size === 0) {
+		await waitConfirmation(await msg.reply(
 			`You forgot to thank the people who helped you! ` +
 				`Use the ${PREFIX}thank command to show your appreciation. ` +
 				`Then press ${CONFIRM_REACTION}.`
-		);
-
-		await reply.extensions.confirmation;
+		));
 	}
 
 	// resolves
-	if (msg.channel.guild.extensions.archiveCategory) {
+	if (getArchiveCategory(msg.channel.guild)) {
 		await msg.channel.edit({
-			parentID: msg.channel.guild.extensions.archiveCategory.id,
+			parentID: getArchiveCategory(msg.channel.guild).id,
 		});
 		
 		msg.channel.send(`This channel has been archived, send a message to revive it.`);
 	} else {
-		const warning = await msg.reply(
+		await waitConfirmation(await msg.reply(
 			`This channel will be deleted due to this server not having an archive channel, do you wish to continue?`,
-		);
-
-		await warning.extensions.confirmation;
+		));
 
 		msg.channel.delete();
 	}

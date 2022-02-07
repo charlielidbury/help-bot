@@ -1,7 +1,14 @@
+
+const {
+	getHelpCategory,
+	channelThanks,
+	getMemberThanks,
+} = require('../utils');
+
 module.exports = async (msg) => {
 	// check:
 	// ~ is help channel
-	if (msg.channel.parentID !== msg.guild.extensions.helpCategory.id)
+	if (msg.channel.parentID !== getHelpCategory(msg.guild).id)
 		return msg.reply("Must thank in the channel you were helped in.");
 
 	// check:
@@ -21,14 +28,14 @@ module.exports = async (msg) => {
 
 		// check:
 		// ~ member hasn't been thanked already
-		if (msg.channel.extensions.thanks.has(member.id))
+		if (channelThanks[msg.channel.id].has(member.id))
 			return msg.reply(`${member} has already been thanked!`);
 
 		// prevents from being thanked twice
-		msg.channel.extensions.thanks.add(member.id);
+		channelThanks[msg.channel.id].add(member.id);
 
 		// updates nickname
-		member.extensions.thanks++;
+		setMemberThanks(member, getMemberThanks(member) + 1);
 
 		// reacts with thumbs up
 		msg.react(OK_REACTION);

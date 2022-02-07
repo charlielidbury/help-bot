@@ -1,9 +1,11 @@
+const { getHelpCategory } = require("../utils");
+
 module.exports = async (msg) => {
 	const { op } = JSON.parse(msg.channel.topic);
 
 	// check:
 	// ~ channel is a help channel
-	if (msg.channel.parentID !== msg.guild.extensions.helpCategory.id) return;
+	if (msg.channel.parentID !== getHelpCategory(msg.channel.guild).id) return;
 
 	// check:
 	// ~ origional poster is trying to exit

@@ -1,8 +1,15 @@
 const commands = require("./commands");
+const {
+	channelThanks,
+	onReaction,
+	getNextHelpChannelName,
+	getHelpCategory,
+	getHelpRole,
+} = require("./utils");
 
 module.exports = async function (msg) {
 	// initialises thanks
-	msg.channel.extensions.thanks = new Set();
+	channelThanks[msg.channel.id] = new Set();
 
 	// sends setup message
 	msg.channel
@@ -15,22 +22,22 @@ module.exports = async function (msg) {
 				},
 				fields: [
 					{
-						name: `\`${PREFIX}resolve\``,
-						value: "Deletes this channel.",
+						name: `\`${PREFIX}resolve\` ${RESOLVE_REACTION}`,
+						value: "Marks issue as resolved.",
 						inline: true,
 					},
+					// {
+					// 	name: `\`${PREFIX}bump\``,
+					// 	value: "Lets the helpers know you're still stuck.",
+					// 	inline: true,
+					// },
 					{
-						name: `\`${PREFIX}bump\``,
-						value: "Lets the helpers know you're still stuck.",
-						inline: true,
-					},
-					{
-						name: `\`${PREFIX}thanks @[dude]\``,
+						name: `\`${PREFIX}thanks @[dude]\` ${THANKS_REACTION}`,
 						value: "Shows your appreciation for @[dude].",
 						inline: true,
 					},
 					{
-						name: `\`${PREFIX}exit\``,
+						name: `\`${PREFIX}exit\` ${EXIT_REACTION}`,
 						value: "Removes you from this channel.",
 						inline: true,
 					},
@@ -38,40 +45,46 @@ module.exports = async function (msg) {
 			},
 		})
 		.then((introMsg) => {
-			introMsg.react(RESOLVE_REACTION);
-			introMsg.react(BUMP_REACTION);
-			introMsg.react(EXIT_REACTION);
-
-			introMsg
-				.createReactionCollector()
-				.on("collect", (reaction, user) => {
-					if (user.bot) return;
-
-					console.log(msg.channel.send);
-					if (reaction === RESOLVE_REACTION) {
-						// fakes a !resolve command
-						// commands.resolve({
-						// 	...msg,
-						// 	author: user,
-						// 	member: msg.guild.members.cache.find(
-						// 		(member) => member.user.id === user.id
-						// 	),
-						// 	reply: msg.channel.send.bind(msg.channel),
-						// });
-					} else if (reaction === BUMP_REACTION) {
-						// fakes a !bump
-						// commands.bump({
-						// 	...msg,
-						// });
-					} else if (reaction === EXIT_REACTION) {
-						// fakes a !exit
-						// commands.exit({
-						// 	...msg,
-						// 	author: user,
-						// 	reply: msg.channel.send.bind(msg.channel),
-						// });
-					}
+			onReaction(introMsg, RESOLVE_REACTION, (_, user) => {
+				// fakes a !resolve command
+				commands.resolve({
+					...msg,
+					author: user,
+					member: msg.guild.members.cache.find(
+						(member) => member.user.id === user.id
+					),
+					reply: msg.channel.send.bind(msg.channel),
 				});
+			});
+			onReaction(introMsg, EXIT_REACTION, (_, user) => {
+				// fakes a !exit
+				commands.exit({
+					...msg,
+					author: user,
+					reply: msg.channel.send.bind(msg.channel),
+				});
+			});
+
+			// introMsg.react(RESOLVE_REACTION).then(() => {
+			// 	console.log("done");
+			// });
+			// introMsg.react(BUMP_REACTION);
+			// introMsg.react(EXIT_REACTION);
+
+			// introMsg
+			// 	.createReactionCollector()
+			// 	.on("collect", (reaction, user) => {
+			// 		if (user.bot) return;
+
+			// 		console.log(msg.channel.send);
+			// 		if (reaction === RESOLVE_REACTION) {
+			// 			
+			// 		} else if (reaction === BUMP_REACTION) {
+			// 			
+			// 		} else if (reaction === EXIT_REACTION) {
+			// 		
+			// 		}
+			// 	});
 		});
 
 	// clones #help
@@ -79,18 +92,18 @@ module.exports = async function (msg) {
 
 	// edits channel
 	msg.channel.edit({
-		name: msg.guild.extensions.nextHelpChannelName,
+		name: getNextHelpChannelName(msg.guild),
 		topic: JSON.stringify({
 			op: msg.author.id,
 		}),
-		parentID: msg.guild.extensions.helpCategory.id,
+		parentID: getHelpCategory(msg.guild).id,
 		permissionOverwrites: [
 			{
 				id: msg.member, // allows the op to see
 				allow: "VIEW_CHANNEL",
 			},
 			{
-				id: msg.guild.extensions.helpRole, // allows helpers to see
+				id: getHelpRole(msg.guild), // allows helpers to see
 				allow: "VIEW_CHANNEL",
 			},
 			{

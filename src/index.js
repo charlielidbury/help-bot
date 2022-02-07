@@ -3,18 +3,24 @@ const client = (module.exports = new Discord.Client());
 
 const commands = require("./commands");
 const startIssue = require("./startIssue");
-// extends prototypes
-// + Discord.Guild.prototype.extensions
-require("./extensions");
+const {
+	getHelpChannel,
+	getHelpCategory,
+	getArchiveCategory,
+	getHelpRole,
+	updating,
+	setMemberThanks,
+	getMemberThanks,
+	channelThanks
+} = require("./utils");
 
 PREFIX = process.env.PREFIX || "!";
 OK_REACTION = "👌";
 CONFIRM_REACTION = "👍";
 RESOLVE_REACTION = "✔️";
-BUMP_REACTION = "🔔";
+THANKS_REACTION = "👏";
+// BUMP_REACTION = "🔔";
 EXIT_REACTION = "🚪";
-client.locals = {};
-client.locals.helpChannels = {};
 
 client.on("ready", () => {
 	console.log(`Logged in as ${client.user.tag}!`);
@@ -22,36 +28,40 @@ client.on("ready", () => {
 	// verifies each guild is setup correctly
 	client.guilds.cache.each((guild) => {
 		// check: #help exists
-		if (!guild.extensions.helpChannel)
+		if (!getHelpChannel(guild))
 			console.warn(`Missing #help in ${guild}`);
 
 		// check: >help exists
-		if (!guild.extensions.helpCategory)
+		if (!getHelpCategory(guild))
 			console.warn(`Missing >help in ${guild}`);
+		
+		// check: >help archive exists
+		if (!getArchiveCategory(guild))
+			console.warn(`Missing >help archive in ${guild}`);
 
 		// check: @helper exists
-		if (!guild.extensions.helpRole)
+		if (!getHelpRole(guild))
 			console.warn(`Missing @helper in ${guild}`);
 
-		// makes an entry in extensions.thanks for each channel
+		// makes an entry in channelThanks for each channel
 		guild.channels.cache.each((channel) => {
-			if (channel.parentID !== guild.extensions.helpCategory.id) return;
+			if (channel.parentID !== getHelpCategory(guild).id) return;
 
-			channel.extensions.thanks = new Set();
+			channelThanks[channel.id] = new Set();
 		});
 	});
 });
 
 // prevents anyone but the bot changing scores
 client.on("guildMemberUpdate", async function (oldMember, newMember) {
-	if (newMember.extensions.updating) return;
+	if (updating.has(newMember.id)) return;
 
-	newMember.extensions.thanks = oldMember.extensions.thanks;
+	setMemberThanks(newMember, getMemberThanks(oldMember));
 });
 
 // stops tracking thanks in deleted channels
 client.on("channelDelete", (channel) => {
-	channel.extensions.thanks = undefined;
+	delete channelThanks[channel.id];
 });
 
 client.on("message", async function (msg) {
@@ -68,10 +78,16 @@ client.on("message", async function (msg) {
 
 	// message in #help
 	if (
-		msg.channel.id === msg.guild.extensions.helpChannel.id &&
-		!msg.channel.extensions.thanks
+		msg.channel.id === getHelpChannel(msg.guild).id &&
+		!channelThanks[msg.channel.id]
 	)
 		startIssue(msg);
+
+	// message in >help archive
+	if (msg.channel.parentID === getArchiveCategory(msg.guild).id)
+		msg.channel.edit({
+			parentID: getHelpCategory(msg.guild).id
+		});
 });
 
 client.login(process.env.TOKEN);

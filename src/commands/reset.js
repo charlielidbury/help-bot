@@ -1,10 +1,15 @@
+const {
+	getHelpChannel,
+	getHelpCategory,
+} = require("../utils");
+
 module.exports = (msg) => {
 	// perms:
 	// ~ user have MANAGE_CHANNELS
 	if (!msg.member.hasPermission("MANAGE_CHANNELS")) return;
 
 	// resets
-	const helpChannel = msg.guild.extensions.helpChannel;
+	const helpChannel = getHelpChannel(msg.guild);
 	msg.guild.channels.cache.map(async (channel) => {
 		// deletes all but 1 help channels
 		if (
@@ -15,7 +20,7 @@ module.exports = (msg) => {
 			channel.delete();
 
 		// deletes all help threads
-		if (channel.parentID === msg.guild.extensions.helpCategory.id)
+		if (channel.parentID === getHelpCategory(msg.guild).id)
 			channel.delete();
 	});
 };
